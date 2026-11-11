@@ -1,0 +1,31 @@
+name: Build RealWeather
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack newest RealWeather zip if present
+        run: |
+          ZIP=$(ls -t RealWeather*.zip 2>/dev/null | head -1 || true)
+          if [ -n "$ZIP" ]; then
+            echo "Using $ZIP"
+            rm -rf _src && mkdir -p _src && unzip -o "$ZIP" -d _src
+            rm -rf src
+            if [ -d _src/RealWeather ] && [ ! -f _src/build.gradle ]; then cp -r _src/RealWeather/. . ; else cp -r _src/. . ; fi
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - run: gradle build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RealWeather-jar
+          path: build/libs/*.jar
+ 
